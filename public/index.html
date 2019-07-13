@@ -9,7 +9,20 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
         crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+        integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 
+
+		
+	<link rel="manifest" href="manifest.json">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="application-name" content="remote">
+	<meta name="apple-mobile-web-app-title" content="remote">
+	<meta name="msapplication-starturl" content="/">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="icon" sizes="256x256" href="public/icons/Network-Remote-Control-icon.png">
+	<link rel="apple-touch-icon" sizes="256x256" href="public/icons/Network-Remote-Control-icon.png">
 </head>
 
 <body>
@@ -37,8 +50,11 @@
                     </div>
                 </div>
                 <hr/>
-                <h3>Change Volume</h3>
 
+
+
+
+                <h3>Change Volume</h3>
                 <div v-for="m in machines" class="row">
 
                     <div class="col-md-1">
@@ -51,6 +67,25 @@
 
                     <div class="col-md-1">
                         <input type="text" v-on:change="changeVolume(m.volume,m.name)" id="volumeText" v-model="m.volume"></input>
+                    </div>
+                </div>
+
+
+                <br/>
+                <H3>Air Condition</H3>
+                <div class="row">
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-success" @click="sendCommand('ac', 'power_on')">
+                            <span class="icon"><i class="fas fa-power-off"></i></span>
+                            <span>cool 25</span>
+                        </button>
+                    </div>
+
+                    <div class="col-md-1">
+                            <button class="btn btn-danger" @click="sendCommand('ac', 'power_on')">
+                                <span class="icon"><i class="fas fa-power-off"></i></span>
+                                <span>off</span>
+                            </button>
                     </div>
                 </div>
             </div>
@@ -102,6 +137,13 @@
                         success: response => console.log(response),
                         error: e => console.log(e)
                     });
+                },
+                
+                sendCommand: function (remote, command) {
+                    var url = "/commands/" + remote + "/" + command;
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.open("GET", url, true);
+                    xhttp.send();
                 }
             }
         })

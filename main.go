@@ -17,7 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/amitbet/KidControl/config"
+	config "github.com/amitbet/KidControl/config"
+	"github.com/amitbet/KidControl/devices/broadlinkrm"
 	"github.com/grandcat/zeroconf"
 	ssdp "github.com/koron/go-ssdp"
 
@@ -27,20 +28,25 @@ import (
 	gmux "github.com/gorilla/mux"
 )
 
+var volPollTimer *time.Ticker
+var localVol int
+
+//var hardwareDevices []config.IHardwareDevice
+
 func SendMessage(wr http.ResponseWriter, message map[string]interface{}) {
 	jsonStr, err := json.Marshal(message)
 	if err != nil {
 		logger.Errorf("SendMessage failed: %+v", err)
 	}
- 
+
 	wr.Write([]byte(jsonStr))
 }
 
 func prepareMachineUrl(machine string) string {
 
-	cfg := config.GetDefaultConfig()
+	cfg := GetConfig()
 
-	machineUrl := cfg.ServiceList[machine]
+	machineUrl := cfg.VolumeServiceList[machine]
 	if !strings.HasSuffix(machineUrl, "/") {
 		machineUrl += "/"
 	}
@@ -134,7 +140,7 @@ func asyncHttpGets(urls []string) []AsyncCallResponse {
 
 }
 
-// NameSorter sorts planets by name.
+// NameSorter sorts by name.
 type NameSorter []map[string]interface{}
 
 func (a NameSorter) Len() int           { return len(a) }
@@ -142,7 +148,7 @@ func (a NameSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a NameSorter) Less(i, j int) bool { return a[i]["name"].(string) < a[j]["name"].(string) }
 
 func sendConfig(wr http.ResponseWriter, req *http.Request) {
-	cfg := config.GetDefaultConfig()
+	cfg := GetConfig()
 	clientConfig := map[string]interface{}{
 		"machines": []map[string]interface{}{},
 	}
@@ -150,7 +156,7 @@ func sendConfig(wr http.ResponseWriter, req *http.Request) {
 
 	machineMap := map[string]string{}
 	urls := []string{}
-	for k, _ := range cfg.ServiceList {
+	for k, _ := range cfg.VolumeServiceList {
 
 		murl := prepareMachineUrl(k) + "/get-volume"
 		machineMap[murl] = k
@@ -194,6 +200,7 @@ func sendConfig(wr http.ResponseWriter, req *http.Request) {
 		return
 	}
 }
+
 func getMachineVol(machine string) int {
 	if machine == "" {
 		machine = "localhost"
@@ -225,6 +232,21 @@ func getMachineVol(machine string) int {
 
 	return jObj["volume"]
 }
+
+func handleDeviceCommand(wr http.ResponseWriter, req *http.Request) {
+	vars := gmux.Vars(req)
+	devices := GetConfig().Devices
+	device := devices[0]
+	remoteName := vars["remote"]
+	commandName := vars["command"]
+
+	cmd := device.GetCommandByNameAndCategory(commandName, remoteName)
+	err := device.RunCommand(cmd)
+	if err != nil {
+		logger.Error("handleDeviceCommand, Error while posting command: ", err)
+	}
+}
+
 func getVolumeOnMachine(wr http.ResponseWriter, req *http.Request) {
 
 	vars := gmux.Vars(req)
@@ -312,6 +334,7 @@ func ssdpAdvertise(quit chan bool) {
 		}
 	}
 }
+
 func ssdpSearch(searchType string, waitTime int, listenAddress string) []ssdp.Service {
 
 	list, err := ssdp.Search(searchType, waitTime, listenAddress)
@@ -337,6 +360,7 @@ func getHostIp() net.IP {
 	}
 	return net.IP{}
 }
+
 func zconfRegister(quit chan bool) {
 	myIp := getHostIp().String()
 	hname, err := os.Hostname()
@@ -407,12 +431,9 @@ func zconfDiscover(serviceMap map[string]string) {
 	<-ctx.Done()
 }
 
-var volPollTimer *time.Timer
-var localVol int
-
-func pollVolume() {
+func startPollingVolume() {
 	var err error
-	volPollTimer = time.NewTimer(time.Second)
+	volPollTimer = time.NewTicker(time.Second)
 	go func() {
 		for {
 			<-volPollTimer.C
@@ -424,10 +445,32 @@ func pollVolume() {
 	}()
 }
 
-func main() {
-	pollVolume()
+func GetConfig() *config.Config {
+	return config.GetConfig("config.json")
+}
+
+func InitDevices() error {
+	cfg := GetConfig()
+	// go over devices and create hardwaer devices for them
+	for _, d := range cfg.Devices {
+		d.SetDevice(&broadlinkrm.BroadlinkDevice{})
+		err := d.Initialize(d.Properties, 10*time.Second)
+		return err
+	}
+	return nil
+}
+
+func InitServer() {
 	fmt.Println("starting!")
-	cfg := config.GetDefaultConfig()
+	cfg := GetConfig()
+
+	startPollingVolume()
+	if cfg.CanControlDevices {
+		err := InitDevices()
+		if err != nil {
+			fmt.Println("Error while Initializing Devices: ", err)
+		}
+	}
 	var sigTerm = make(chan os.Signal)
 	quit := make(chan bool)
 	signal.Notify(sigTerm, syscall.SIGTERM)
@@ -442,14 +485,14 @@ func main() {
 	}()
 
 	//go zconfRegister(quit)
-	//go zconfDiscover(cfg.ServiceList)
+	//go zconfDiscover(cfg.VolumeServiceList)
 
 	go ssdpAdvertise(quit)
 	svcList := ssdpSearch("urn:schemas-upnp-org:service:KidControl:1", 5, "")
 	for _, svc := range svcList {
 		svcName := svc.USN[3:]
 		svcUrl := svc.Location
-		cfg.ServiceList[strings.ToLower(svcName)] = svcUrl
+		cfg.VolumeServiceList[strings.ToLower(svcName)] = svcUrl
 	}
 
 	mux := gmux.NewRouter() //.StrictSlash(true)
@@ -460,10 +503,18 @@ func main() {
 	mux.HandleFunc("/get-volume", getVolume)
 	mux.HandleFunc("/configuration", sendConfig)
 
+	if cfg.CanControlDevices {
+		mux.HandleFunc("/commands/{remote}/{command}", handleDeviceCommand)
+	}
+
 	mux.PathPrefix("/").Handler(http.FileServer(http.Dir("./public")))
 	logger.Info("Listening on address: ", cfg.ListeningAddress)
 	err := http.ListenAndServe(cfg.ListeningAddress, mux)
 	if err != nil {
 		logger.Errorf("listening error: ", err)
 	}
+}
+
+func main() {
+	InitServer()
 }

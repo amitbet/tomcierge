@@ -1,0 +1,13 @@
+{
+  "name": "HomeRemote",
+  "short_name": "remote",
+  "lang": "en-US",
+  "start_url": "/",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "public/icons/Network-Remote-Control-icon.png",
+      "sizes": "256x256"
+    }
+  ]
+}

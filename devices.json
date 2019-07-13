@@ -1,0 +1,9 @@
+[
+  {
+    "name": "rm3-mini",
+    "udpAddress": "192.168.1.224:80",
+    "macAddress": "78:0f:77:d6:80:3e",
+    "type": 10039,
+    "typeName": "RM Mini / RM3 Mini Blackbean"
+  }
+]
