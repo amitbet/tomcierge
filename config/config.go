@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/amitbet/KidControl/util"
+	"github.com/amitbet/tomcierge/util"
 	"time"
 )
 

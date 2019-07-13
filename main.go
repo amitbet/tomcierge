@@ -17,12 +17,12 @@ import (
 	"syscall"
 	"time"
 
-	config "github.com/amitbet/KidControl/config"
-	"github.com/amitbet/KidControl/devices/broadlinkrm"
+	config "github.com/amitbet/tomcierge/config"
+	"github.com/amitbet/tomcierge/devices/broadlinkrm"
 	"github.com/grandcat/zeroconf"
 	ssdp "github.com/koron/go-ssdp"
 
-	"github.com/amitbet/KidControl/logger"
+	"github.com/amitbet/tomcierge/logger"
 
 	"github.com/amitbet/volume-go"
 	gmux "github.com/gorilla/mux"
@@ -308,10 +308,10 @@ func ssdpAdvertise(quit chan bool) {
 	}
 
 	ad, err := ssdp.Advertise(
-		"urn:schemas-upnp-org:service:KidControl:1", // send as "ST"
+		"urn:schemas-upnp-org:service:tomcierge:1", // send as "ST"
 		"id:"+hname,             // send as "USN"
 		"http://"+myIp+":7777/", // send as "LOCATION"
-		"ssdp for KidControl",   // send as "SERVER"
+		"ssdp for tomcierge",   // send as "SERVER"
 		3600)                    // send as "maxAge" in "CACHE-CONTROL"
 	if err != nil {
 		logger.Error("Error advertising ssdp: ", err)
@@ -488,7 +488,7 @@ func InitServer() {
 	//go zconfDiscover(cfg.VolumeServiceList)
 
 	go ssdpAdvertise(quit)
-	svcList := ssdpSearch("urn:schemas-upnp-org:service:KidControl:1", 5, "")
+	svcList := ssdpSearch("urn:schemas-upnp-org:service:tomcierge:1", 5, "")
 	for _, svc := range svcList {
 		svcName := svc.USN[3:]
 		svcUrl := svc.Location

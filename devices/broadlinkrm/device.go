@@ -2,7 +2,7 @@ package broadlinkrm
 
 import (
 	"fmt"
-	"github.com/amitbet/KidControl/config"
+	"github.com/amitbet/tomcierge/config"
 	"github.com/mixcode/broadlink"
 	"net"
 	"os"

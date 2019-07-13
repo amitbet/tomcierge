@@ -1,4 +1,4 @@
-module github.com/amitbet/KidControl
+module github.com/amitbet/tomcierge
 
 go 1.12
 

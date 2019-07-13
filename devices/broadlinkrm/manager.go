@@ -3,8 +3,8 @@ package broadlinkrm
 // import (
 // 	"errors"
 // 	"fmt"
-// 	"github.com/amitbet/KidControl/config"
-// 	"github.com/amitbet/KidControl/util"
+// 	"github.com/amitbet/tomcierge/config"
+// 	"github.com/amitbet/tomcierge/util"
 // 	"time"
 // )
 
