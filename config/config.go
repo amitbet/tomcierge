@@ -3,9 +3,9 @@ package config
 import (
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/amitbet/tomcierge/util"
-	"time"
 )
 
 type Config struct {
@@ -40,7 +40,8 @@ func (d *Device) Initialize(props map[string]string, timeout time.Duration) erro
 }
 
 func (d *Device) RunCommand(cmd DeviceCommand) error {
-	return d.internalDevice.RunCommand(cmd)
+	err := d.internalDevice.RunCommand(cmd)
+	return err
 }
 
 type Command struct {

@@ -33,7 +33,7 @@ var localVol int
 
 //var hardwareDevices []config.IHardwareDevice
 
-func SendMessage(wr http.ResponseWriter, message map[string]interface{}) {
+func HttpRespond(wr http.ResponseWriter, message map[string]interface{}) {
 	jsonStr, err := json.Marshal(message)
 	if err != nil {
 		logger.Errorf("SendMessage failed: %+v", err)
@@ -80,7 +80,7 @@ func setVolumeOnMachine(wr http.ResponseWriter, req *http.Request) {
 		jObj1 := map[string]interface{}{
 			"volume": vol,
 		}
-		SendMessage(wr, jObj1)
+		HttpRespond(wr, jObj1)
 		logger.Debugf("sending volume back: %d\n", vol)
 		return
 	}
@@ -243,8 +243,11 @@ func handleDeviceCommand(wr http.ResponseWriter, req *http.Request) {
 	cmd := device.GetCommandByNameAndCategory(commandName, remoteName)
 	err := device.RunCommand(cmd)
 	if err != nil {
-		logger.Error("handleDeviceCommand, Error while posting command: ", err)
+		wr.WriteHeader(500)
+	} else {
+		wr.WriteHeader(200)
 	}
+
 }
 
 func getVolumeOnMachine(wr http.ResponseWriter, req *http.Request) {
@@ -255,7 +258,7 @@ func getVolumeOnMachine(wr http.ResponseWriter, req *http.Request) {
 	jObj := map[string]interface{}{
 		"volume": vol,
 	}
-	SendMessage(wr, jObj)
+	HttpRespond(wr, jObj)
 }
 
 func getVolume(wr http.ResponseWriter, req *http.Request) {
@@ -266,7 +269,7 @@ func getVolume(wr http.ResponseWriter, req *http.Request) {
 	jObj := map[string]interface{}{
 		"volume": localVol,
 	}
-	SendMessage(wr, jObj)
+	HttpRespond(wr, jObj)
 	logger.Debugf("sending volume: %d\n", localVol)
 }
 
@@ -296,7 +299,7 @@ func setVolume(wr http.ResponseWriter, req *http.Request) {
 	jObj1 := map[string]interface{}{
 		"volume": vol,
 	}
-	SendMessage(wr, jObj1)
+	HttpRespond(wr, jObj1)
 	logger.Debugf("sending volume back: %d\n", vol)
 }
 
@@ -311,7 +314,7 @@ func ssdpAdvertise(quit chan bool) {
 		"urn:schemas-upnp-org:service:tomcierge:1", // send as "ST"
 		"id:"+hname,             // send as "USN"
 		"http://"+myIp+":7777/", // send as "LOCATION"
-		"ssdp for tomcierge",   // send as "SERVER"
+		"ssdp for tomcierge",    // send as "SERVER"
 		3600)                    // send as "maxAge" in "CACHE-CONTROL"
 	if err != nil {
 		logger.Error("Error advertising ssdp: ", err)
@@ -433,13 +436,13 @@ func zconfDiscover(serviceMap map[string]string) {
 
 func startPollingVolume() {
 	var err error
-	volPollTimer = time.NewTicker(time.Second)
+	volPollTimer = time.NewTicker(2 * time.Second)
 	go func() {
 		for {
 			<-volPollTimer.C
 			localVol, err = volume.GetVolume()
 			if err != nil {
-				logger.Errorf("listening error: ", err)
+				logger.Errorf("error while getting volume: ", err)
 			}
 		}
 	}()
@@ -455,6 +458,9 @@ func InitDevices() error {
 	for _, d := range cfg.Devices {
 		d.SetDevice(&broadlinkrm.BroadlinkDevice{})
 		err := d.Initialize(d.Properties, 10*time.Second)
+		if err != nil {
+			logger.Error("Error while Initializing Devices: ", err)
+		}
 		return err
 	}
 	return nil
@@ -466,10 +472,7 @@ func InitServer() {
 
 	startPollingVolume()
 	if cfg.CanControlDevices {
-		err := InitDevices()
-		if err != nil {
-			fmt.Println("Error while Initializing Devices: ", err)
-		}
+		go InitDevices()
 	}
 	var sigTerm = make(chan os.Signal)
 	quit := make(chan bool)

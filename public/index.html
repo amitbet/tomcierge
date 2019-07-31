@@ -7,34 +7,44 @@
     <link rel="icon" href="/icons/Network-Remote-Control-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
-        crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
+        integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
         integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 
 
-		
-	<link rel="manifest" href="manifest.json">
-	<meta name="mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-capable" content="yes">
-	<meta name="application-name" content="remote">
-	<meta name="apple-mobile-web-app-title" content="remote">
-	<meta name="msapplication-starturl" content="/">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="icon" sizes="256x256" href="public/icons/Network-Remote-Control-icon.png">
-	<link rel="apple-touch-icon" sizes="256x256" href="public/icons/Network-Remote-Control-icon.png">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="remote">
+    <meta name="apple-mobile-web-app-title" content="remote">
+    <meta name="msapplication-starturl" content="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" sizes="256x256" href="/icons/Network-Remote-Control-icon.png">
+    <link rel="apple-touch-icon" sizes="256x256" href="/icons/Network-Remote-Control-icon.png">
 </head>
 
 <body>
+    <style CSS>
+        .input-group>.input-group-prepend {
+            flex: 0 0 12%;
+        }
 
+        .input-group .input-group-text {
+            width: 100%;
+        }
+    </style>
 
     <script src="https://unpkg.com/vue"></script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ"
         crossorigin="anonymous"></script> -->
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm"
-        crossorigin="anonymous"></script>
-    <br/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"
+        integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm"
+        crossorigin="anonymous"></script>
+    <br />
+
     <script>
     </script>
 
@@ -43,13 +53,14 @@
             <div class="form-group m-3" id="vueApp">
                 <div class="row">
                     <div class="media">
-                        <img src="/icons/Network-Remote-Control-icon.png" class="align-self-end" style="height: 48px;width: 48px;">
+                        <img src="/icons/Network-Remote-Control-icon.png" class="align-self-end"
+                            style="height: 48px;width: 48px;">
                         <div class="media-body align-self-end">
                             <h2 class="mt-0">Remote Control</h2>
                         </div>
                     </div>
                 </div>
-                <hr/>
+                <hr />
 
 
 
@@ -57,35 +68,54 @@
                 <h3>Change Volume</h3>
                 <div v-for="m in machines" class="row">
 
-                    <div class="col-md-1">
+                    <div class="input-group mb-3 col-12">
+                        <div class="input-group-prepend ">
+                            <span class="input-group-text" id="inputGroup-sizing-default">{{m.name}}</span>
+                        </div>
+                        <input type="range" class="form-control custom-range pl-2 pr-2 col-md-3"
+                            v-on:change="changeVolume(m.volume,m.name)" min="0" max="100" v-model="m.volume"
+                            id="volumeSlider"></input>
+                        <div class="input-group-append">
+                            <span class="input-group-text">{{m.volume}}</span>
+                        </div>
+                        <!-- <div class="input-group-append">
+                            <input type="text" class="input-group-text" v-model="m.volume">
+                        </div> -->
+                    </div>
+
+                    <!-- <div class="col-md-1">
                         <b>{{m.name}}</b>
                     </div>
 
                     <div class="col-md-2">
-                        <input type="range" v-on:change="changeVolume(m.volume,m.name)" min="0" max="100" v-model="m.volume" id="volumeSlider"></input>
+                        <input type="range" class="custom-range" v-on:change="changeVolume(m.volume,m.name)" min="0"
+                            max="100" v-model="m.volume" id="volumeSlider"></input>
                     </div>
 
-                    <div class="col-md-1">
-                        <input type="text" v-on:change="changeVolume(m.volume,m.name)" id="volumeText" v-model="m.volume"></input>
-                    </div>
+                    <div class="col-md-1 input-group input-group-sm mb-3">
+                        <input type="text" v-on:change="changeVolume(m.volume,m.name)" id="volumeText"
+                            class="form-control" v-model="m.volume"></input>
+                    </div> -->
                 </div>
 
 
-                <br/>
+                <br />
                 <H3>Air Condition</H3>
                 <div class="row">
                     <div class="col-md-2">
-                        <button type="button" class="btn btn-success" @click="sendCommand('ac', 'power_on')">
+                        <button :disabled="isDisabled" type="button" class="btn btn-success btn-block"
+                            @click="sendCommand('ac', 'power_on')">
                             <span class="icon"><i class="fas fa-power-off"></i></span>
                             <span>cool 25</span>
                         </button>
                     </div>
 
-                    <div class="col-md-1">
-                            <button class="btn btn-danger" @click="sendCommand('ac', 'power_on')">
-                                <span class="icon"><i class="fas fa-power-off"></i></span>
-                                <span>off</span>
-                            </button>
+                    <div class="col-md-2">
+                        <button :disabled="isDisabled" type="button" class="btn btn-danger btn-block"
+                            @click="sendCommand('ac', 'power_off')">
+                            <span class="icon"><i class="fas fa-power-off"></i></span>
+                            <span>off</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -102,16 +132,17 @@
     <script>
         var appData = new Vue({
             el: '#vueApp',
+
             data: {
-                machines: [,
-                ]
+                isDisabled: false,
+                machines: []
             },
             mounted: function () {
                 var self = this;
                 $.get("http://" + window.location.host + "/configuration", function (data) {
                     let d = JSON.parse(data)
                     self.machines = d.machines;
-                    if (self.machines.length == 0){
+                    if (self.machines.length == 0) {
                         $.get("http://" + window.location.host + "/get-volume", function (data) {
                             let d1 = JSON.parse(data)
                             self.machines = [{
@@ -138,12 +169,29 @@
                         error: e => console.log(e)
                     });
                 },
-                
+
                 sendCommand: function (remote, command) {
+                    this.isDisabled = true;
                     var url = "/commands/" + remote + "/" + command;
-                    var xhttp = new XMLHttpRequest();
-                    xhttp.open("GET", url, true);
-                    xhttp.send();
+                    fetch(url)
+                        .then(
+                            response => this.isDisabled = false
+                            //response => response.text() // .json(), etc.
+                            // same as function(response) {return response.text();}
+                        ).catch((err) => {
+                            this.isDisabled = false;
+                        });
+                    //.then(html => console.log(html));
+
+                    // var xhttp = new XMLHttpRequest();
+                    // xhttp.onreadystatechange = function () {
+                    //     this.isDisabled = false;
+                    //     if (this.readyState == 4 && this.status == 200) {
+                    //         this.isDisabled = false;
+                    //     }
+                    // };
+                    // xhttp.open("GET", url, true);
+                    // xhttp.send();
                 }
             }
         })

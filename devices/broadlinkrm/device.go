@@ -2,12 +2,14 @@ package broadlinkrm
 
 import (
 	"fmt"
-	"github.com/amitbet/tomcierge/config"
-	"github.com/mixcode/broadlink"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/amitbet/tomcierge/config"
+	"github.com/amitbet/tomcierge/logger"
+	"github.com/mixcode/broadlink"
 )
 
 // BroadlinkDevice holds the information to access a Broadlink device on the network.
@@ -17,6 +19,7 @@ type BroadlinkDevice struct {
 	MACAddress string `json:"macAddress"`
 	Type       uint16 `json:"type"`
 	TypeName   string `json:"typeName,omitempty"`
+	NumRetries int    `json:"numRetries,omitempty"`
 	device     *broadlink.Device
 }
 
@@ -33,18 +36,37 @@ func NewBroadlinkDevice(name string, device broadlink.Device) *BroadlinkDevice {
 		MACAddress: net.HardwareAddr(device.MACAddr).String(),
 		Type:       device.Type,
 		TypeName:   model,
+		NumRetries: 1,
 	}
 }
 
-func (dev *BroadlinkDevice) RunCommand(cmd config.DeviceCommand) error {
+func (d *BroadlinkDevice) RunCommand(cmd config.DeviceCommand) error {
+	if d.NumRetries < 1 {
+		d.NumRetries = 1
+	}
+
 	cmdBytes, err := cmd.GetBytesToSend()
 	if err != nil {
+		return fmt.Errorf("IR code GetBytesToSend failure: %s", err)
+	}
+	counter := 1
+	for {
+		err = d.device.SendIRRemoteCode(cmdBytes, 1)
+		if err == nil {
+			return nil
+		} else if counter != d.NumRetries {
+			logger.Warnf("Retrying: IR code send failure (%s)", err)
+		} else {
+			break
+		}
+		counter++
+	}
+
+	if err != nil {
+		logger.Errorf("Quitting: IR code send failure: %s", err)
 		return fmt.Errorf("IR code send failure: %s", err)
 	}
 
-	if err := dev.device.SendIRRemoteCode(cmdBytes, 1); err != nil {
-		return fmt.Errorf("IR code send failure: %s", err)
-	}
 	return nil
 }
 
@@ -76,12 +98,15 @@ func (d *BroadlinkDevice) GetBroadlinkDevice() *broadlink.Device {
 // InitializeDevice initialize the device by creating a broadlink.Device and authenticating with it.
 // Device communication timeout is provided as a parameter.
 func (d *BroadlinkDevice) Initialize(props map[string]string, timeout time.Duration) error {
-	intType, _ := strconv.Atoi(props["type"])
-	d.Type = uint16(intType)
 	d.Name = props["name"]
 	d.UDPAddress = props["udpAddress"]
 	d.MACAddress = props["macAddress"]
 	d.TypeName = props["typeName"]
+
+	intType, _ := strconv.Atoi(props["type"])
+	d.Type = uint16(intType)
+	intNumRetries, _ := strconv.Atoi(props["numRetries"])
+	d.NumRetries = intNumRetries
 
 	if d.device == nil {
 		if err := d.createDevice(); err != nil {
@@ -94,14 +119,34 @@ func (d *BroadlinkDevice) Initialize(props map[string]string, timeout time.Durat
 		return nil
 	}
 
+	if d.NumRetries < 1 {
+		d.NumRetries = 1
+	}
+
 	hostname, _ := os.Hostname() // Your local machine's name.
 	fakeID := make([]byte, 15)   // Must be 15 bytes long.
 
 	d.device.Timeout = timeout
 
-	if err := d.device.Auth(fakeID, hostname); err != nil {
+	counter := 1
+	var err error
+	for {
+		err = d.device.Auth(fakeID, hostname)
+		if err == nil {
+			return nil
+		} else if counter != d.NumRetries {
+			logger.Warnf("Retrying: failed to authenticate with device %s  (%s)", d.Name, err)
+		} else {
+			break
+		}
+		counter++
+	}
+
+	if err != nil {
+		logger.Errorf("Quitting: failed to authenticate with device %s (%v)", d.Name, err)
 		return fmt.Errorf("failed to authenticate with device %s, addr %s, %s", d.Name, d.UDPAddress, err)
 	}
+
 	return nil
 }
 
