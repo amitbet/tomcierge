@@ -14,4 +14,5 @@ require (
 	github.com/mixcode/broadlink v0.0.0-20181109083349-59c23b4e7b1a
 	github.com/pkg/errors v0.8.1 // indirect
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
+	golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a
 )

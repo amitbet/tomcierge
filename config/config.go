@@ -15,6 +15,7 @@ type Config struct {
 
 	VolumeServiceList map[string]string `"json:volumeServiceList"`
 }
+
 type IHardwareDevice interface {
 	Initialize(props map[string]string, timeout time.Duration) error
 	RunCommand(cmd DeviceCommand) error
@@ -79,12 +80,15 @@ func loadConfiguration(configFile string) error {
 	return nil
 }
 
-func GetConfig(configFile string) *Config {
+func GetConfig(configFile string) (*Config, error) {
 	if dConfig != nil {
-		return dConfig
+		return dConfig, nil
 	}
 
-	loadConfiguration(configFile)
+	err := loadConfiguration(configFile)
+	if err != nil {
+		return nil,err
+	}
 	if dConfig == nil {
 		dConfig = &Config{
 			ListeningAddress:  ":7777",
@@ -99,5 +103,5 @@ func GetConfig(configFile string) *Config {
 	if dConfig.Devices == nil {
 		dConfig.Devices = []*Device{}
 	}
-	return dConfig
+	return dConfig,nil
 }
