@@ -1,2 +1,5 @@
 debug
 tomcierge.exe
+*.exe
+*~
+*go1
