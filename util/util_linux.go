@@ -1,6 +1,6 @@
 // +build !windows
 
-package main
+package util
 
 import (
 	"github.com/amitbet/volume-go"

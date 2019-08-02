@@ -21,6 +21,7 @@ type AsyncCallResponse struct {
 	Error error
 }
 
+// AsyncHttpGets gets several urls asynchronously
 func AsyncHttpGets(urls []string) []AsyncCallResponse {
 	ch := make(chan AsyncCallResponse, len(urls)) // buffered
 	responses := []AsyncCallResponse{}
