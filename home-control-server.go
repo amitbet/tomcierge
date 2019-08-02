@@ -121,7 +121,15 @@ func (s *HomeControlServer) sendConfig(wr http.ResponseWriter, req *http.Request
 
 	machineMap := map[string]string{}
 	urls := []string{}
-	for k, _ := range s.Configuration.VolumeServiceList {
+	if len(s.Configuration.VolumeServiceList) == 0 {
+		_, err := wr.Write([]byte("{\"machines\":[]}"))
+		if err != nil {
+			s.Logger.Error("sendConfig Error in writing config to response: ", err)
+			return
+		}
+		return
+	}
+	for k := range s.Configuration.VolumeServiceList {
 
 		murl := s.prepareMachineUrl(k) + "/get-volume"
 		machineMap[murl] = k
