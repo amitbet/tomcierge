@@ -30,17 +30,18 @@ import (
 	gmux "github.com/gorilla/mux"
 )
 
-var volPollTimer *time.Ticker
-var localVol int
-
+// HomeControlServer is the listener for the REST Api and the device controller
 type HomeControlServer struct {
 	IsService     bool
 	QuitChan      chan bool
 	Logger        service.Logger
 	Configuration *config.Config
 	BasePath      string
+	volPollTimer  *time.Ticker
+	localVol      int
 }
 
+// httpRespond is a helper function for returning http responses to REST calls
 func (s *HomeControlServer) httpRespond(wr http.ResponseWriter, message map[string]interface{}) {
 	jsonStr, err := json.Marshal(message)
 	if err != nil {
@@ -50,10 +51,8 @@ func (s *HomeControlServer) httpRespond(wr http.ResponseWriter, message map[stri
 	wr.Write([]byte(jsonStr))
 }
 
+// prepareMachineUrl returns the correct URL for a given machine
 func (s *HomeControlServer) prepareMachineUrl(machine string) string {
-
-	//cfg := GetConfig()
-
 	machineUrl := s.Configuration.VolumeServiceList[machine]
 	if !strings.HasSuffix(machineUrl, "/") {
 		machineUrl += "/"
@@ -61,6 +60,7 @@ func (s *HomeControlServer) prepareMachineUrl(machine string) string {
 	return machineUrl
 }
 
+// setVolumeOnMachine sets the volume on the target machine, by calling the parallel home-control API on that machine
 func (s *HomeControlServer) setVolumeOnMachine(wr http.ResponseWriter, req *http.Request) {
 
 	body, err := ioutil.ReadAll(req.Body)
@@ -104,50 +104,6 @@ func (s *HomeControlServer) setVolumeOnMachine(wr http.ResponseWriter, req *http
 
 }
 
-type AsyncCallResponse struct {
-	Body  []byte
-	Url   string
-	Error error
-}
-
-func asyncHttpGets(urls []string) []AsyncCallResponse {
-	ch := make(chan AsyncCallResponse, len(urls)) // buffered
-	responses := []AsyncCallResponse{}
-
-	for _, url := range urls {
-		go func(url string) {
-			timeout := time.Duration(2 * time.Second)
-			client := http.Client{
-				Timeout: timeout,
-			}
-			fmt.Printf("Fetching %s \n", url)
-			resp, err := client.Get(url)
-			if err != nil {
-				ch <- AsyncCallResponse{Body: []byte{}, Url: url, Error: err}
-				return
-			}
-			body, err := ioutil.ReadAll(resp.Body)
-			ch <- AsyncCallResponse{Body: body, Url: url, Error: err}
-		}(url)
-	}
-
-	for {
-		select {
-		case r := <-ch:
-			fmt.Printf("%s was fetched\n", r.Url)
-			responses = append(responses, r)
-			if len(responses) == len(urls) {
-				return responses
-			}
-			// case <-time.After(50 * time.Millisecond):
-			// 	fmt.Printf(".")
-		}
-	}
-
-	return responses
-
-}
-
 // NameSorter sorts by name.
 type NameSorter []map[string]interface{}
 
@@ -155,6 +111,7 @@ func (a NameSorter) Len() int           { return len(a) }
 func (a NameSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a NameSorter) Less(i, j int) bool { return a[i]["name"].(string) < a[j]["name"].(string) }
 
+// sendConfig sends the machine configuration
 func (s *HomeControlServer) sendConfig(wr http.ResponseWriter, req *http.Request) {
 	//cfg := GetConfig()
 	clientConfig := map[string]interface{}{
@@ -171,7 +128,7 @@ func (s *HomeControlServer) sendConfig(wr http.ResponseWriter, req *http.Request
 		urls = append(urls, murl)
 	}
 
-	results := asyncHttpGets(urls)
+	results := util.AsyncHttpGets(urls)
 	for _, result := range results {
 		parsed := map[string]interface{}{}
 		if result.Error != nil {
@@ -275,12 +232,13 @@ func (s *HomeControlServer) getVolume(wr http.ResponseWriter, req *http.Request)
 	// 	logger.Errorf("get volume failed: %+v", err)
 	// }
 	jObj := map[string]interface{}{
-		"volume": localVol,
+		"volume": s.localVol,
 	}
 	s.httpRespond(wr, jObj)
-	s.Logger.Infof("sending volume: %d\n", localVol)
+	s.Logger.Infof("sending volume: %d\n", s.localVol)
 }
 
+// ssdpAdvertise broadcasts the service name in the network using the ssdp protocol
 func (s *HomeControlServer) ssdpAdvertise(quit chan bool) {
 	myIp := s.getHostIp().String()
 	hname, err := os.Hostname()
@@ -316,6 +274,7 @@ func (s *HomeControlServer) ssdpAdvertise(quit chan bool) {
 	}
 }
 
+// ssdpSearch searches for other home-automation services of our type by using ssdp
 func (s *HomeControlServer) ssdpSearch(searchType string, waitTime int, listenAddress string) []ssdp.Service {
 
 	list, err := ssdp.Search(searchType, waitTime, listenAddress)
@@ -342,6 +301,7 @@ func (s *HomeControlServer) getHostIp() net.IP {
 	return net.IP{}
 }
 
+// zconfRegister registeres the service as a zeroconf object
 func (s *HomeControlServer) zconfRegister(quit chan bool) {
 	myIp := s.getHostIp().String()
 	hname, err := os.Hostname()
@@ -374,6 +334,7 @@ func (s *HomeControlServer) zconfRegister(quit chan bool) {
 	s.Logger.Info("stopping zeroconf publishing server")
 }
 
+// zconfDiscover runs discovery over the network using the zero-conf protocol
 func (s *HomeControlServer) zconfDiscover(serviceMap map[string]string) {
 	resolver, err := zeroconf.NewResolver(nil)
 	if err != nil {
@@ -412,13 +373,14 @@ func (s *HomeControlServer) zconfDiscover(serviceMap map[string]string) {
 	<-ctx.Done()
 }
 
+// startPollingVolume runs the polling loop so volume level data remains up to date
 func (s *HomeControlServer) startPollingVolume() {
 	var err error
-	volPollTimer = time.NewTicker(2 * time.Second)
+	s.volPollTimer = time.NewTicker(2 * time.Second)
 	go func() {
 		for {
-			<-volPollTimer.C
-			localVol, err = volume.GetVolume()
+			<-s.volPollTimer.C
+			s.localVol, err = volume.GetVolume()
 			if err != nil {
 				logger.Errorf("error while getting volume: ", err)
 			}
@@ -426,6 +388,7 @@ func (s *HomeControlServer) startPollingVolume() {
 	}()
 }
 
+// initDevices initializes all registered devices
 func (s *HomeControlServer) initDevices() error {
 	//	cfg := GetConfig()
 	// go over devices and create hardwaer devices for them
@@ -440,6 +403,7 @@ func (s *HomeControlServer) initDevices() error {
 	return nil
 }
 
+// InitServer initializes the devices and runs the REST server
 func (s *HomeControlServer) InitServer() {
 	fmt.Println("starting!")
 	s.startPollingVolume()
@@ -490,6 +454,7 @@ func (s *HomeControlServer) InitServer() {
 	}
 }
 
+// Start initializes and runs the service
 func (s *HomeControlServer) Start(svc service.Service) error {
 
 	slogger, err := svc.Logger(nil)
@@ -526,6 +491,7 @@ func (s *HomeControlServer) Start(svc service.Service) error {
 	return nil
 }
 
+// Stop halts the service operation
 func (s *HomeControlServer) Stop(_ service.Service) error {
 	s.QuitChan <- true
 	time.Sleep(1 * time.Second)

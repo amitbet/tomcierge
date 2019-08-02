@@ -7,7 +7,8 @@ import (
 	"github.com/kardianos/service"
 )
 
-func SetLocalVolume(vol int, isService bool,logger service.Logger) error {
+// SetLocalVolume sets volume on the active console session
+func SetLocalVolume(vol int, isService bool, logger service.Logger) error {
 	// logger.Info("Running as service: ", isService)
 	// if isService {
 	// 	exePath, err := os.Executable()

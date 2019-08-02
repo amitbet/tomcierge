@@ -11,19 +11,12 @@ import (
 	"github.com/kardianos/service"
 )
 
+// GetConfig reads the config.json and returns an object
 func GetConfig() (*config.Config, error) {
 	return config.GetConfig("config.json")
 }
 
 func main() {
-	// exePath, _ := os.Executable()
-
-	// exeDir, exeFile := pathSplit(exePath)
-	// fmt.Println("exe path: ", exePath)
-	// fmt.Println("exe file: ", exeFile)
-	// fmt.Println("exe dir: ", exeDir)
-	// return
-
 	isServiceFlag := flag.Bool("service", true, "indicates whether or not we are runnig as a service (defaults to true)")
 	installFlag := flag.Bool("install", false, "install the application as a service")
 	uninstallFlag := flag.Bool("uninstall", false, "uninstall the service")
