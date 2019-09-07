@@ -505,6 +505,6 @@ func (s *HomeControlServer) Start(svc service.Service) error {
 func (s *HomeControlServer) Stop(_ service.Service) error {
 	s.QuitChan <- true
 	time.Sleep(1 * time.Second)
-	os.Exit(0)
+	//os.Exit(0)
 	return nil
 }
