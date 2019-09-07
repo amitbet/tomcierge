@@ -7,7 +7,6 @@ import (
 	"unsafe"
 
 	"github.com/amitbet/volume-go"
-
 	"github.com/kardianos/service"
 	"golang.org/x/sys/windows"
 )

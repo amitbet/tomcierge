@@ -20,7 +20,6 @@ import (
 
 	config "github.com/amitbet/tomcierge/config"
 	"github.com/amitbet/tomcierge/devices/broadlinkrm"
-	"github.com/amitbet/tomcierge/logger"
 	"github.com/amitbet/tomcierge/util"
 	"github.com/grandcat/zeroconf"
 	"github.com/kardianos/service"
@@ -216,6 +215,7 @@ func (s *HomeControlServer) handleDeviceCommand(wr http.ResponseWriter, req *htt
 	cmd := device.GetCommandByNameAndCategory(commandName, remoteName)
 	err := device.RunCommand(cmd)
 	if err != nil {
+		s.Logger.Error("handleDeviceCommand, Error: ", err)
 		wr.WriteHeader(500)
 	} else {
 		wr.WriteHeader(200)
@@ -383,15 +383,17 @@ func (s *HomeControlServer) zconfDiscover(serviceMap map[string]string) {
 
 // startPollingVolume runs the polling loop so volume level data remains up to date
 func (s *HomeControlServer) startPollingVolume() {
-	var err error
-	s.volPollTimer = time.NewTicker(2 * time.Second)
+	s.volPollTimer = time.NewTicker(10 * time.Second)
 	go func() {
 		for {
 			<-s.volPollTimer.C
-			s.localVol, err = volume.GetVolume()
+			newVol, err := volume.GetVolume()
 			if err != nil {
-				logger.Errorf("error while getting volume: ", err)
+				s.Logger.Errorf("error while getting volume: %v", err)
+				continue
 			}
+			//s.Logger.Info("got volume: ", s.localVol)
+			s.localVol = newVol
 		}
 	}()
 }

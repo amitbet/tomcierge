@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	config "github.com/amitbet/tomcierge/config"
 	"github.com/amitbet/tomcierge/logger"
@@ -17,15 +18,28 @@ func GetConfig() (*config.Config, error) {
 }
 
 func main() {
-	isServiceFlag := flag.Bool("service", true, "indicates whether or not we are runnig as a service (defaults to true)")
+	var getVol, isService bool
+	flag.BoolVar(&isService, "service", true, "indicates whether or not we are runnig as a service (defaults to true)")
 	installFlag := flag.Bool("install", false, "install the application as a service")
 	uninstallFlag := flag.Bool("uninstall", false, "uninstall the service")
 	setVolFlag := flag.Int("setvol", -1, " sets the volume and closes the process")
+	flag.BoolVar(&getVol, "getvol", false, " gets the volume and returns it in the error level")
 
 	flag.Parse()
 
 	if *setVolFlag != -1 {
 		volume.SetVolume(*setVolFlag)
+		return
+	}
+
+	if getVol != false {
+		log.Println("Getting Volume")
+		vol, err := volume.GetVolume()
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(-1)
+		}
+		os.Exit(vol)
 		return
 	}
 
@@ -58,7 +72,7 @@ func main() {
 		s.Uninstall()
 		return
 	}
-	if *isServiceFlag {
+	if isService {
 		err = s.Run()
 		if err != nil {
 			logger.Error(err)
