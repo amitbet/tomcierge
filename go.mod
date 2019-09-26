@@ -1,22 +1,24 @@
-module github.com/amitbet/tomcierge
+module tomcierge
 
-go 1.12
+go 1.13
 
 require (
-	bitbucket.org/avd/go-ipc v0.6.1 // indirect
+	github.com/amitbet/tomcierge v0.0.0-20190907070916-3488b5eb3143
 	github.com/amitbet/volume-go v0.0.2
-	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/davidrjenni/reftools v0.0.0-20190827201643-0605d60846fb // indirect
+	github.com/go-delve/delve v1.3.1 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grandcat/zeroconf v0.0.0-20190424104450-85eadb44205c
-	github.com/itchyny/volume-go v0.0.0 // indirect
 	github.com/kardianos/service v1.0.0
 	github.com/koron/go-ssdp v0.0.0-20180514024734-4a0ed625a78b
-	github.com/miekg/dns v1.1.15 // indirect
+	github.com/mdempsky/gocode v0.0.0-20190203001940-7fb65232883f // indirect
+	github.com/miekg/dns v1.1.18 // indirect
 	github.com/mixcode/broadlink v0.0.0-20181109083349-59c23b4e7b1a
-	github.com/natefinch/npipe v0.0.0-20160621034901-c1b8fa8bdcce
-	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/stretchr/testify v1.4.0 // indirect
-	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
-	golang.org/x/sys v0.0.0-20190830023255-19e00faab6ad
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	github.com/ramya-rao-a/go-outline v0.0.0-20181122025142-7182a932836a // indirect
+	github.com/rogpeppe/godef v1.1.1 // indirect
+	golang.org/x/crypto v0.0.0-20190923035154-9ee001bba392 // indirect
+	golang.org/x/lint v0.0.0-20190909230951-414d861bb4ac // indirect
+	golang.org/x/net v0.0.0-20190926025831-c00fd9afed17 // indirect
+	golang.org/x/sys v0.0.0-20190924154521-2837fb4f24fe
 )

@@ -40,11 +40,12 @@ func NewBroadlinkDevice(name string, device broadlink.Device) *BroadlinkDevice {
 	}
 }
 
+// RunCommand sends an command to the device (send IR)
 func (d *BroadlinkDevice) RunCommand(cmd config.DeviceCommand) error {
 	if d.NumRetries < 1 {
 		d.NumRetries = 1
 	}
-
+	d.AuthDevice(3 * time.Second)
 	cmdBytes, err := cmd.GetBytesToSend()
 	if err != nil {
 		return fmt.Errorf("IR code GetBytesToSend failure: %s", err)
@@ -118,6 +119,12 @@ func (d *BroadlinkDevice) Initialize(props map[string]string, timeout time.Durat
 	if d.device.ID != 0 {
 		return nil
 	}
+
+	return d.AuthDevice(timeout)
+}
+
+// AuthDevice authenticates with the device
+func (d *BroadlinkDevice) AuthDevice(timeout time.Duration) error {
 
 	if d.NumRetries < 1 {
 		d.NumRetries = 1

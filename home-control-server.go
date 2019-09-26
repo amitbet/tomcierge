@@ -31,13 +31,14 @@ import (
 
 // HomeControlServer is the listener for the REST Api and the device controller
 type HomeControlServer struct {
-	IsService     bool
-	QuitChan      chan bool
-	Logger        service.Logger
-	Configuration *config.Config
-	BasePath      string
-	volPollTimer  *time.Ticker
-	localVol      int
+	IsService        bool
+	QuitChan         chan bool
+	SearcherQuitChan chan bool
+	Logger           service.Logger
+	Configuration    *config.Config
+	BasePath         string
+	volPollTimer     *time.Ticker
+	localVol         int
 }
 
 // httpRespond is a helper function for returning http responses to REST calls
@@ -246,6 +247,27 @@ func (s *HomeControlServer) getVolume(wr http.ResponseWriter, req *http.Request)
 	s.Logger.Infof("sending volume: %d\n", s.localVol)
 }
 
+func (s *HomeControlServer) ssdpSearcher(quit chan bool) {
+
+	aliveTick := time.Tick(5 * time.Second)
+
+	// run Searcher periodically.
+	for {
+		select {
+		case <-aliveTick:
+			svcList := s.ssdpSearch("urn:schemas-upnp-org:service:tomcierge:1", 5, "")
+			for _, svc := range svcList {
+				svcName := svc.USN[3:]
+				svcUrl := svc.Location
+				s.Configuration.VolumeServiceList[strings.ToLower(svcName)] = svcUrl
+			}
+		case <-quit:
+			s.Logger.Info("Closing ssdp searcher")
+			return
+		}
+	}
+}
+
 // ssdpAdvertise broadcasts the service name in the network using the ssdp protocol
 func (s *HomeControlServer) ssdpAdvertise(quit chan bool) {
 	myIp := s.getHostIp().String()
@@ -422,6 +444,7 @@ func (s *HomeControlServer) InitServer() {
 	}
 	var sigTerm = make(chan os.Signal)
 	s.QuitChan = make(chan bool)
+	s.SearcherQuitChan = make(chan bool)
 	signal.Notify(sigTerm, syscall.SIGTERM)
 	signal.Notify(sigTerm, syscall.SIGINT)
 	go func() {
@@ -429,6 +452,7 @@ func (s *HomeControlServer) InitServer() {
 		fmt.Printf("caught sig: %+v\n", sig)
 		fmt.Println("Waiting for a second to finish processing")
 		s.QuitChan <- true
+		s.SearcherQuitChan <- true
 		time.Sleep(1 * time.Second)
 		os.Exit(0)
 	}()
@@ -437,12 +461,7 @@ func (s *HomeControlServer) InitServer() {
 	//go zconfDiscover(cfg.VolumeServiceList)
 
 	go s.ssdpAdvertise(s.QuitChan)
-	svcList := s.ssdpSearch("urn:schemas-upnp-org:service:tomcierge:1", 5, "")
-	for _, svc := range svcList {
-		svcName := svc.USN[3:]
-		svcUrl := svc.Location
-		s.Configuration.VolumeServiceList[strings.ToLower(svcName)] = svcUrl
-	}
+	go s.ssdpSearcher(s.SearcherQuitChan)
 
 	mux := gmux.NewRouter() //.StrictSlash(true)
 
