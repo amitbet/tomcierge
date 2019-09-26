@@ -3,9 +3,6 @@
 package util
 
 import (
-	"os"
-	"syscall"
-
 	"github.com/amitbet/volume-go"
 	"github.com/kardianos/service"
 )
