@@ -235,6 +235,22 @@ func (s *HomeControlServer) getVolumeOnMachine(wr http.ResponseWriter, req *http
 	s.httpRespond(wr, jObj)
 }
 
+func (s *HomeControlServer) playAlertSound(w http.ResponseWriter, r *http.Request) {
+	//vars := gmux.Vars(r)
+	//sndFile := vars["file"]
+
+	fmt.Printf("Playing Alert sounds ... ")
+	util.PlayLocalAlert(s.IsService, s.Logger, s.Configuration.Alert)
+	// for _, sndFile := range s.Configuration.Alert {
+	// 	util.SndPlaySoundW(path.Join("sound", sndFile), util.SND_SYNC|util.SND_SYSTEM|util.SND_RING)
+	// }
+	//fmt.Println("done")
+	jObj := map[string]interface{}{
+		"play": "done",
+	}
+	s.httpRespond(w, jObj)
+}
+
 func (s *HomeControlServer) getVolume(wr http.ResponseWriter, req *http.Request) {
 	// vol, err := volume.GetVolume()
 	// if err != nil {
@@ -470,6 +486,7 @@ func (s *HomeControlServer) InitServer() {
 	mux.HandleFunc("/get-volume", s.getVolumeOnMachine).Queries("machine", "{machine}")
 	mux.HandleFunc("/get-volume", s.getVolume)
 	mux.HandleFunc("/configuration", s.sendConfig)
+	mux.HandleFunc("/alert", s.playAlertSound)
 
 	if s.Configuration.CanControlDevices {
 		mux.HandleFunc("/commands/{remote}/{command}", s.handleDeviceCommand)

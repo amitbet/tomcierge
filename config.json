@@ -1,6 +1,7 @@
 {
   "listeningAddress": ":7777",
   "canControlDevices": true,
+  "alert":["alert.wav","alert.wav","dror.wav"],
   "devices": [
     {
       "properties": {

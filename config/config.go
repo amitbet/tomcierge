@@ -12,6 +12,7 @@ type Config struct {
 	ListeningAddress  string    `"json:listeningAddress"`
 	CanControlDevices bool      `"json:canControlDevices"`
 	Devices           []*Device `"json:devices"`
+	Alert             []string  `"json:alert"`
 
 	VolumeServiceList map[string]string `"json:volumeServiceList"`
 }
@@ -87,7 +88,7 @@ func GetConfig(configFile string) (*Config, error) {
 
 	err := loadConfiguration(configFile)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	if dConfig == nil {
 		dConfig = &Config{
@@ -103,5 +104,5 @@ func GetConfig(configFile string) (*Config, error) {
 	if dConfig.Devices == nil {
 		dConfig.Devices = []*Device{}
 	}
-	return dConfig,nil
+	return dConfig, nil
 }

@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"unsafe"
 
@@ -244,6 +245,33 @@ func SetLocalVolume(vol int, isService bool, logger service.Logger) error {
 		}
 	} else {
 		volume.SetVolume(vol)
+	}
+	return nil
+}
+
+// PlayLocalAlert plays a sound on the active console session
+func PlayLocalAlert(isService bool, logger service.Logger, sndFileArray []string) error {
+	logger.Info("Running as service: ", isService)
+	if isService {
+		exePath, err := os.Executable()
+		if err != nil {
+			return err
+		}
+		exeDir, _ := PathSplit(exePath)
+
+		cmd := exePath + " -alert "
+		logger.Infof("SetVol by running on another session run-command: %s", cmd)
+		err = StartProcessAsCurrentUser(exePath, cmd, exeDir)
+		//cmd := exec.Command(exePath, "-setvol", strconv.Itoa(vol))
+		//err = cmd.Run()
+		if err != nil {
+			logger.Errorf("SetVol error: %v", err)
+			return err
+		}
+	} else {
+		for _, sndFile := range sndFileArray {
+			SndPlaySoundW(path.Join("sound", sndFile), SND_SYNC|SND_SYSTEM|SND_RING)
+		}
 	}
 	return nil
 }
