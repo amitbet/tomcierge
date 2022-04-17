@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package util
@@ -26,4 +27,17 @@ func SetLocalVolume(vol int, isService bool, logger service.Logger) error {
 	volume.SetVolume(vol)
 	// }
 	return nil
+}
+
+func MachineSleep() {
+	//no implementation for linux yet
+}
+
+func PlayLocalAlert(isService bool, logger service.Logger, sndFileArray []string) error {
+	//no implementation for linux yet
+	return nil
+}
+
+func PlaySoundFile(path, sndFile string) {
+	//no implementation for linux yet
 }

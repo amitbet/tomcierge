@@ -234,6 +234,10 @@ func (s *HomeControlServer) getVolumeOnMachine(wr http.ResponseWriter, req *http
 	}
 	s.httpRespond(wr, jObj)
 }
+func (s *HomeControlServer) hibernate(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Hibernating ... ")
+	util.MachineSleep()
+}
 
 func (s *HomeControlServer) playAlertSound(w http.ResponseWriter, r *http.Request) {
 	//vars := gmux.Vars(r)
@@ -487,6 +491,7 @@ func (s *HomeControlServer) InitServer() {
 	mux.HandleFunc("/get-volume", s.getVolume)
 	mux.HandleFunc("/configuration", s.sendConfig)
 	mux.HandleFunc("/alert", s.playAlertSound)
+	mux.HandleFunc("/hibernate", s.hibernate)
 
 	if s.Configuration.CanControlDevices {
 		mux.HandleFunc("/commands/{remote}/{command}", s.handleDeviceCommand)

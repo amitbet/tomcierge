@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+
 	"strings"
 	"time"
 )
@@ -43,19 +44,14 @@ func AsyncHttpGets(urls []string) []AsyncCallResponse {
 		}(url)
 	}
 
-	for {
-		select {
-		case r := <-ch:
-			fmt.Printf("%s was fetched\n", r.Url)
-			responses = append(responses, r)
-			if len(responses) == len(urls) {
-				return responses
-			}
-			// case <-time.After(50 * time.Millisecond):
-			// 	fmt.Printf(".")
+	for r := range ch {
+		fmt.Printf("%s was fetched\n", r.Url)
+		responses = append(responses, r)
+		if len(responses) == len(urls) {
+			return responses
 		}
+		// case <-time.After(50 * time.Millisecond):
+		// 	fmt.Printf(".")
 	}
-
 	return responses
-
 }

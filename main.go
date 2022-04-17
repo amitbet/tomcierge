@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 
 	config "github.com/amitbet/tomcierge/config"
 	"github.com/amitbet/tomcierge/logger"
@@ -42,7 +41,7 @@ func main() {
 			fmt.Println("error while loading config: ", err)
 		}
 		for _, sndFile := range cfg.Alert {
-			util.SndPlaySoundW(path.Join("sound", sndFile), util.SND_SYNC|util.SND_SYSTEM|util.SND_RING)
+			util.PlaySoundFile("sound", sndFile)
 		}
 		return
 	}

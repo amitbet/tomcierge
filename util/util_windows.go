@@ -2,14 +2,16 @@ package util
 
 import (
 	"fmt"
-	"os"
-	"path"
-	"strconv"
-	"unsafe"
-
 	"github.com/amitbet/volume-go"
 	"github.com/kardianos/service"
 	"golang.org/x/sys/windows"
+	"os"
+	"os/exec"
+	"path"
+	"strconv"
+	"strings"
+	"syscall"
+	"unsafe"
 )
 
 var (
@@ -274,4 +276,50 @@ func PlayLocalAlert(isService bool, logger service.Logger, sndFileArray []string
 		}
 	}
 	return nil
+}
+
+func Execute(command string) (bool, string, error) {
+	// splitting head => g++ parts => rest of the command
+	parts := strings.Fields(command)
+	head := parts[0]
+	parts = parts[1:len(parts)]
+
+	out, err := exec.Command(head, parts...).Output()
+	if err != nil {
+		return false, "", err
+	}
+	return true, string(out), nil
+}
+
+func sleepCommandLineImplementation() {
+	cmd := "C:\\Windows\\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,0"
+
+	fmt.Println("Sleep implementation [windows], sleep command is [", cmd, "]")
+	_, _, err := Execute(cmd)
+	if err != nil {
+		fmt.Println("Can't execute co`mmand [" + cmd + "] : " + err.Error())
+	} else {
+		fmt.Println("Command correctly executed")
+	}
+}
+func MachineSleep() {
+	sleepDLLImplementation()
+}
+
+func sleepDLLImplementation() {
+	var mod = syscall.NewLazyDLL("Powrprof.dll")
+	var proc = mod.NewProc("SetSuspendState")
+
+	// DLL API : public static extern bool SetSuspendState(bool hiberate, bool forceCritical, bool disableWakeEvent);
+	// ex. : uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Done Title"))),
+	ret, _, _ := proc.Call(0,
+		uintptr(0), // hibernate
+		uintptr(1), // forceCritical
+		uintptr(0)) // disableWakeEvent
+
+	fmt.Println("Command executed, result code [" + fmt.Sprint(ret) + "]")
+}
+
+func PlaySoundFile(pathToFile string, sndFile string) {
+	SndPlaySoundW(path.Join(pathToFile, sndFile), SND_SYNC|SND_SYSTEM|SND_RING)
 }
