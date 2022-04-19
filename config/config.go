@@ -15,6 +15,11 @@ type Config struct {
 	Alert             []string  `"json:alert"`
 
 	VolumeServiceList map[string]string `"json:volumeServiceList"`
+	MqttBrokerAddress string            `"json:mqttBrokerAddress"`
+	MqttBrokerPort    string            `"json:mqttBrokerPort"`
+	MqttUser          string            `"json:mqttUser"`
+	MqttPassword      string            `"json:mqttPassword"`
+	MachineName       string            `"json:machineName"` //name of the current machine (defaults to hostname)
 }
 
 type IHardwareDevice interface {

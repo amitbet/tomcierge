@@ -15,7 +15,20 @@ import (
 
 // GetConfig reads the config.json and returns an object
 func GetConfig() (*config.Config, error) {
-	return config.GetConfig("config.json")
+
+	cfg, err := config.GetConfig("config.json")
+	if err != nil {
+		return nil, err
+	}
+	h, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.MachineName == "" {
+		cfg.MachineName = h
+	}
+	return cfg, nil
 }
 
 func main() {
@@ -101,6 +114,7 @@ func main() {
 		srv.Logger = slogger
 		srv.BasePath = "./"
 		srv.InitServer()
+
 	}
 
 }
