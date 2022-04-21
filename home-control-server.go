@@ -627,12 +627,15 @@ func (t Timespan) TasmotaFormat() string {
 func (s *HomeControlServer) SendMqttStatistics() {
 
 	//cpuAvg, err := util.CpuLoad()
-	cpuTimes, err := cpu.Times(false)
+	//cpuTimes, err := cpu.Times(false)
+	// if err != nil {
+	// 	s.Logger.Error(err)
+	// }
+	cpuPercent, err := cpu.Percent(5*time.Second, false)
 	if err != nil {
 		s.Logger.Error(err)
 	}
-	cpuTime := cpuTimes[0]
-	cpuLoad := cpuTime.Idle / cpuTime.Total()
+	cpuLoad := cpuPercent[0]
 
 	if s.SystemInfo == nil {
 
