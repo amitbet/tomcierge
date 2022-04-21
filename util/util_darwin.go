@@ -4,8 +4,9 @@
 package util
 
 import (
-	"github.com/amitbet/volume-go"
+	"github.com/itchyny/volume-go"
 	"github.com/kardianos/service"
+	"github.com/shirou/gopsutil/v3/load"
 )
 
 // SetLocalVolume sets volume on the active console session
@@ -39,4 +40,13 @@ func PlayLocalAlert(isService bool, logger service.Logger, sndFileArray []string
 }
 func PlaySoundFile(path, sndFile string) {
 	//no implementation for mac yet
+}
+
+func CpuLoad() (int64, error) {
+	info, err := load.Avg()
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(info.Load1), nil
 }

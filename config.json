@@ -1,7 +1,11 @@
 {
   "listeningAddress": ":7777",
-  "canControlDevices": true,
-  "alert":["alert.wav","alert.wav","dror.wav"],
+  "canControlDevices": false,
+  "alert": [
+    "alert.wav",
+    "alert.wav",
+    "dror.wav"
+  ],
   "devices": [
     {
       "properties": {
@@ -24,5 +28,10 @@
         }
       }
     }
-  ]
+  ],
+  "mqttUser": "amit",
+  "mqttPassword": "ancient098123",
+  "mqttBrokerAddress": "192.168.1.101",
+  "mqttBrokerPort": "1883",
+  "machineName": "amitMac"
 }

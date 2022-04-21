@@ -9,7 +9,7 @@ import (
 	config "github.com/amitbet/tomcierge/config"
 	"github.com/amitbet/tomcierge/logger"
 	"github.com/amitbet/tomcierge/util"
-	"github.com/amitbet/volume-go"
+	"github.com/itchyny/volume-go"
 	"github.com/kardianos/service"
 )
 

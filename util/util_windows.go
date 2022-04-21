@@ -2,7 +2,8 @@ package util
 
 import (
 	"fmt"
-	"github.com/amitbet/volume-go"
+	"github.com/gonutz/w32/v2"
+	"github.com/itchyny/volume-go"
 	"github.com/kardianos/service"
 	"golang.org/x/sys/windows"
 	"os"
@@ -11,8 +12,35 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
+
+func CpuLoad() (int64, error) {
+	var idle, kernel, user w32.FILETIME
+
+	w32.GetSystemTimes(&idle, &kernel, &user)
+	idleFirst := idle.DwLowDateTime | (idle.DwHighDateTime << 32)
+	kernelFirst := kernel.DwLowDateTime | (kernel.DwHighDateTime << 32)
+	userFirst := user.DwLowDateTime | (user.DwHighDateTime << 32)
+
+	time.Sleep(time.Second)
+
+	w32.GetSystemTimes(&idle, &kernel, &user)
+	idleSecond := idle.DwLowDateTime | (idle.DwHighDateTime << 32)
+	kernelSecond := kernel.DwLowDateTime | (kernel.DwHighDateTime << 32)
+	userSecond := user.DwLowDateTime | (user.DwHighDateTime << 32)
+
+	totalIdle := float64(idleSecond - idleFirst)
+	totalKernel := float64(kernelSecond - kernelFirst)
+	totalUser := float64(userSecond - userFirst)
+	totalSys := float64(totalKernel + totalUser)
+
+	cpuload := (totalSys - totalIdle) * 100 / totalSys
+	// fmt.Printf("Idle: %f%%\nKernel: %f%%\nUser: %f%%\n", (totalIdle / totalSys) * 100, (totalKernel / totalSys) * 100, (totalUser / totalSys) * 100)
+	// fmt.Printf("\nTotal: %f%%\n", cpuload)
+	return int64(cpuload), nil
+}
 
 var (
 	modwtsapi32 *windows.LazyDLL = windows.NewLazySystemDLL("wtsapi32.dll")
