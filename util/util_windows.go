@@ -331,17 +331,23 @@ func sleepCommandLineImplementation() {
 	}
 }
 func MachineSleep() {
-	sleepDLLImplementation()
+	sleepDLLImplementation(false)
+}
+func MachineHibernate() {
+	sleepDLLImplementation(true)
 }
 
-func sleepDLLImplementation() {
+func sleepDLLImplementation(hibernate bool) {
 	var mod = syscall.NewLazyDLL("Powrprof.dll")
 	var proc = mod.NewProc("SetSuspendState")
-
+	var hiber uintptr = 0
+	if hibernate {
+		hiber = 1
+	}
 	// DLL API : public static extern bool SetSuspendState(bool hiberate, bool forceCritical, bool disableWakeEvent);
 	// ex. : uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Done Title"))),
 	ret, _, _ := proc.Call(0,
-		uintptr(0), // hibernate
+		hiber,      // hibernate
 		uintptr(1), // forceCritical
 		uintptr(0)) // disableWakeEvent
 

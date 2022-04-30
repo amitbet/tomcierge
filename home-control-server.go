@@ -240,12 +240,12 @@ func (s *HomeControlServer) getVolumeOnMachine(wr http.ResponseWriter, req *http
 	}
 	s.httpRespond(wr, jObj)
 }
-func (s *HomeControlServer) hibernate(w http.ResponseWriter, r *http.Request) {
+func (s *HomeControlServer) hibernateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Hibernating ... ")
-	util.MachineSleep()
+	util.MachineHibernate()
 }
 
-func (s *HomeControlServer) playAlertSound(w http.ResponseWriter, r *http.Request) {
+func (s *HomeControlServer) playAlertSoundHandler(w http.ResponseWriter, r *http.Request) {
 	//vars := gmux.Vars(r)
 	//sndFile := vars["file"]
 
@@ -434,16 +434,21 @@ func (s *HomeControlServer) startChronJobs() {
 	s.taskTimer = time.NewTicker(10 * time.Second)
 	go func() {
 		for {
-			<-s.taskTimer.C
-			newVol, err := volume.GetVolume()
-			if err != nil {
-				s.Logger.Errorf("error while getting volume: %v", err)
-				continue
-			}
-			//s.Logger.Info("got volume: ", s.localVol)
-			s.localVol = newVol
+			select {
+			case <-s.taskTimer.C:
 
-			s.SendMqttStatistics()
+				newVol, err := volume.GetVolume()
+				if err != nil {
+					s.Logger.Errorf("error while getting volume: %v", err)
+				}
+				//s.Logger.Info("got volume: ", s.localVol)
+				s.localVol = newVol
+				s.SendMqttStatistics()
+
+			case <-s.QuitChan:
+				s.Logger.Info("Closing chron job")
+				return
+			}
 		}
 	}()
 }
@@ -468,8 +473,11 @@ func (s *HomeControlServer) InitServer() {
 	fmt.Println("starting!")
 	s.StartTime = time.Now()
 
+	fmt.Println("initializing mqtt")
 	s.InitMqtt()
+	fmt.Println("done initializing mqtt, starting chron jobs")
 	s.startChronJobs()
+
 	if s.Configuration.CanControlDevices {
 		go s.initDevices()
 	}
@@ -484,15 +492,18 @@ func (s *HomeControlServer) InitServer() {
 		fmt.Println("Waiting for a second to finish processing")
 		s.QuitChan <- true
 		s.SearcherQuitChan <- true
+		s.taskTimer.Stop()
+
 		time.Sleep(1 * time.Second)
+		fmt.Println("exiting!")
 		os.Exit(0)
 	}()
 
 	//go zconfRegister(quit)
 	//go zconfDiscover(cfg.VolumeServiceList)
 
-	go s.ssdpAdvertise(s.QuitChan)
-	go s.ssdpSearcher(s.SearcherQuitChan)
+	// go s.ssdpAdvertise(s.QuitChan)
+	// go s.ssdpSearcher(s.SearcherQuitChan)
 
 	mux := gmux.NewRouter() //.StrictSlash(true)
 
@@ -501,8 +512,8 @@ func (s *HomeControlServer) InitServer() {
 	mux.HandleFunc("/get-volume", s.getVolumeOnMachine).Queries("machine", "{machine}")
 	mux.HandleFunc("/get-volume", s.getVolume)
 	mux.HandleFunc("/configuration", s.sendConfig)
-	mux.HandleFunc("/alert", s.playAlertSound)
-	mux.HandleFunc("/hibernate", s.hibernate)
+	mux.HandleFunc("/alert", s.playAlertSoundHandler)
+	mux.HandleFunc("/hibernate", s.hibernateHandler)
 
 	if s.Configuration.CanControlDevices {
 		mux.HandleFunc("/commands/{remote}/{command}", s.handleDeviceCommand)
@@ -522,10 +533,8 @@ func (s *HomeControlServer) MqttHandler(client mqtt.Client, msg mqtt.Message) {
 	cmndPrefix := "cmnd/" + s.Configuration.MachineName + "/"
 	switch msg.Topic() {
 	case cmndPrefix + "hibernate":
-		util.MachineSleep()
+		util.MachineHibernate()
 	case cmndPrefix + "sleep":
-		util.MachineSleep()
-	case cmndPrefix + "shutdown":
 		util.MachineSleep()
 	case cmndPrefix + "setvol":
 		volStr := string(msg.Payload())
@@ -554,7 +563,7 @@ func (s *HomeControlServer) MqttSub(topic string) {
 	//topic := "topic/test"
 	token := s.MqttClient.Subscribe(topic, 1, nil)
 	token.Wait()
-	fmt.Printf("Subscribed to topic %s: ", topic)
+	fmt.Printf("Subscribed to topic: %s\n", topic)
 }
 
 func (s *HomeControlServer) MqttSubToCommands(commands []string) {
@@ -625,7 +634,7 @@ func (t Timespan) TasmotaFormat() string {
 }
 
 func (s *HomeControlServer) SendMqttStatistics() {
-
+	s.Logger.Info("sending mqtt stats")
 	//cpuAvg, err := util.CpuLoad()
 	//cpuTimes, err := cpu.Times(false)
 	// if err != nil {
@@ -692,8 +701,9 @@ func (s *HomeControlServer) SendMqttStatistics() {
 	if err != nil {
 		s.Logger.Error(err)
 	}
-
-	s.MqttPub("tele/"+s.Configuration.MachineName+"/", string(b))
+	msg := string(b)
+	s.Logger.Info("mqtt stats message: " + msg)
+	s.MqttPub("tele/"+s.Configuration.MachineName+"/", msg)
 }
 
 // Start initializes and runs the service

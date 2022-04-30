@@ -33,6 +33,9 @@ func SetLocalVolume(vol int, isService bool, logger service.Logger) error {
 func MachineSleep() {
 	//no implementation for linux yet
 }
+func MachineHibernate() {
+	//no implementation for linux yet
+}
 
 func PlayLocalAlert(isService bool, logger service.Logger, sndFileArray []string) error {
 	//no implementation for linux yet
