@@ -30,10 +30,10 @@ func SetLocalVolume(vol int, isService bool, logger service.Logger) error {
 	return nil
 }
 
-func MachineSleep() {
+func MachineSleep(logger service.Logger) {
 	//no implementation for mac yet
 }
-func MachineHibernate() {
+func MachineHibernate(logger service.Logger) {
 	//no implementation for mac yet
 }
 

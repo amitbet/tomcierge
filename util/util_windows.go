@@ -319,25 +319,26 @@ func Execute(command string) (bool, string, error) {
 	return true, string(out), nil
 }
 
-func sleepCommandLineImplementation() {
+func sleepCommandLineImplementation(logger service.Logger) {
 	cmd := "C:\\Windows\\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,0"
 
-	fmt.Println("Sleep implementation [windows], sleep command is [", cmd, "]")
+	logger.Infof("Sleep implementation [windows], sleep command is [", cmd, "]")
 	_, _, err := Execute(cmd)
 	if err != nil {
-		fmt.Println("Can't execute co`mmand [" + cmd + "] : " + err.Error())
+		logger.Infof("Can't execute command [" + cmd + "] : " + err.Error())
 	} else {
-		fmt.Println("Command correctly executed")
+		logger.Infof("Command correctly executed")
 	}
 }
-func MachineSleep() {
-	sleepDLLImplementation(false)
+func MachineSleep(logger service.Logger) {
+	sleepDLLImplementation(false, logger)
 }
-func MachineHibernate() {
-	sleepDLLImplementation(true)
+func MachineHibernate(logger service.Logger) {
+	sleepDLLImplementation(true, logger)
 }
 
-func sleepDLLImplementation(hibernate bool) {
+func sleepDLLImplementation(hibernate bool, logger service.Logger) {
+	logger.Infof("sleepDLLImplementation, hibernate = %b", hibernate)
 	var mod = syscall.NewLazyDLL("Powrprof.dll")
 	var proc = mod.NewProc("SetSuspendState")
 	var hiber uintptr = 0
@@ -351,7 +352,7 @@ func sleepDLLImplementation(hibernate bool) {
 		uintptr(1), // forceCritical
 		uintptr(0)) // disableWakeEvent
 
-	fmt.Println("Command executed, result code [" + fmt.Sprint(ret) + "]")
+	logger.Infof("Command executed, result code [" + fmt.Sprint(ret) + "]")
 }
 
 func PlaySoundFile(pathToFile string, sndFile string) {

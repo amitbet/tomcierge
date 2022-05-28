@@ -240,9 +240,10 @@ func (s *HomeControlServer) getVolumeOnMachine(wr http.ResponseWriter, req *http
 	}
 	s.httpRespond(wr, jObj)
 }
+
 func (s *HomeControlServer) hibernateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Hibernating ... ")
-	util.MachineHibernate()
+	util.MachineHibernate(s.Logger)
 }
 
 func (s *HomeControlServer) playAlertSoundHandler(w http.ResponseWriter, r *http.Request) {
@@ -533,9 +534,9 @@ func (s *HomeControlServer) MqttHandler(client mqtt.Client, msg mqtt.Message) {
 	cmndPrefix := "cmnd/" + s.Configuration.MachineName + "/"
 	switch msg.Topic() {
 	case cmndPrefix + "hibernate":
-		util.MachineHibernate()
+		util.MachineHibernate(s.Logger)
 	case cmndPrefix + "sleep":
-		util.MachineSleep()
+		util.MachineSleep(s.Logger)
 	case cmndPrefix + "setvol":
 		volStr := string(msg.Payload())
 		vol, err := strconv.ParseInt(volStr, 10, 64)
