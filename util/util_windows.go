@@ -338,7 +338,7 @@ func MachineHibernate(logger service.Logger) {
 }
 
 func sleepDLLImplementation(hibernate bool, logger service.Logger) {
-	logger.Infof("sleepDLLImplementation, hibernate = %b", hibernate)
+	logger.Infof("sleepDLLImplementation, hibernate = %t", hibernate)
 	var mod = syscall.NewLazyDLL("Powrprof.dll")
 	var proc = mod.NewProc("SetSuspendState")
 	var hiber uintptr = 0

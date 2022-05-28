@@ -635,7 +635,8 @@ func (t Timespan) TasmotaFormat() string {
 }
 
 func (s *HomeControlServer) SendMqttStatistics() {
-	s.Logger.Info("sending mqtt stats")
+	//s.Logger.Info("sending mqtt stats")
+
 	//cpuAvg, err := util.CpuLoad()
 	//cpuTimes, err := cpu.Times(false)
 	// if err != nil {
@@ -703,7 +704,7 @@ func (s *HomeControlServer) SendMqttStatistics() {
 		s.Logger.Error(err)
 	}
 	msg := string(b)
-	s.Logger.Info("mqtt stats message: " + msg)
+	//s.Logger.Info("mqtt stats message: " + msg)
 	s.MqttPub("tele/"+s.Configuration.MachineName+"/", msg)
 }
 
