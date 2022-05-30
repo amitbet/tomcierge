@@ -242,8 +242,13 @@ func (s *HomeControlServer) getVolumeOnMachine(wr http.ResponseWriter, req *http
 }
 
 func (s *HomeControlServer) hibernateHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Hibernating ... ")
+	s.Logger.Info("Hibernating ... ")
 	util.MachineHibernate(s.Logger)
+}
+
+func (s *HomeControlServer) sleepHandler(w http.ResponseWriter, r *http.Request) {
+	s.Logger.Info("Sleeping ... ")
+	util.MachineSleep(s.Logger)
 }
 
 func (s *HomeControlServer) playAlertSoundHandler(w http.ResponseWriter, r *http.Request) {
@@ -515,7 +520,7 @@ func (s *HomeControlServer) InitServer() {
 	mux.HandleFunc("/configuration", s.sendConfig)
 	mux.HandleFunc("/alert", s.playAlertSoundHandler)
 	mux.HandleFunc("/hibernate", s.hibernateHandler)
-
+	mux.HandleFunc("/sleep", s.sleepHandler)
 	if s.Configuration.CanControlDevices {
 		mux.HandleFunc("/commands/{remote}/{command}", s.handleDeviceCommand)
 	}
@@ -530,7 +535,7 @@ func (s *HomeControlServer) InitServer() {
 
 // var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 func (s *HomeControlServer) MqttHandler(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	s.Logger.Infof("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 	cmndPrefix := "cmnd/" + s.Configuration.MachineName + "/"
 	switch msg.Topic() {
 	case cmndPrefix + "hibernate":
@@ -544,7 +549,10 @@ func (s *HomeControlServer) MqttHandler(client mqtt.Client, msg mqtt.Message) {
 			s.Logger.Error(err)
 		}
 		volume.SetVolume(int(vol))
+	case cmndPrefix + "alert":
+		util.PlayLocalAlert(s.IsService, s.Logger, s.Configuration.Alert)
 	}
+
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -704,8 +712,8 @@ func (s *HomeControlServer) SendMqttStatistics() {
 		s.Logger.Error(err)
 	}
 	msg := string(b)
-	//s.Logger.Info("mqtt stats message: " + msg)
-	s.MqttPub("tele/"+s.Configuration.MachineName+"/", msg)
+	s.Logger.Info("mqtt stats message: " + msg)
+	s.MqttPub("tele/"+s.Configuration.MachineName+"/STATE", msg)
 }
 
 // Start initializes and runs the service
