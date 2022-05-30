@@ -556,11 +556,7 @@ func (s *HomeControlServer) MqttHandler(client mqtt.Client, msg mqtt.Message) {
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
-}
-
-var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connect lost: %v", err)
+	fmt.Println("Mqtt connected")
 }
 
 func (s *HomeControlServer) MqttPub(topic, message string) {
@@ -589,16 +585,43 @@ func (s *HomeControlServer) InitMqtt() {
 	opts.SetClientID(s.Configuration.MachineName + "_mqtt_client")
 	opts.SetUsername(s.Configuration.MqttUser)
 	opts.SetPassword(s.Configuration.MqttPassword)
-	opts.SetDefaultPublishHandler(s.MqttHandler)
+	opts.DefaultPublishHandler = s.MqttHandler
 
-	opts.OnConnect = connectHandler
-	opts.OnConnectionLost = connectLostHandler
+	//mqtt example: https://github.com/eclipse/paho.mqtt.golang/blob/master/cmd/docker/subscriber/main.go
+	opts.OnConnect = func(c mqtt.Client) {
+		s.Logger.Info("mqtt connection established")
+
+		s.MqttSubToCommands([]string{"hibernate", "setvol", "shutdown", "sleep"})
+
+		// Establish the subscription - doing this here means that it will happen every time a connection is established
+		// (useful if opts.CleanSession is TRUE or the broker does not reliably store session data)
+		// t := c.Subscribe(TOPIC, QOS, h.handle)
+		// // the connection handler is called in a goroutine so blocking here would hot cause an issue. However as blocking
+		// // in other handlers does cause problems its best to just assume we should not block
+		// go func() {
+		// 	_ = t.Wait() // Can also use '<-t.Done()' in releases > 1.2.0
+		// 	if t.Error() != nil {
+		// 		fmt.Printf("ERROR SUBSCRIBING: %s\n", t.Error())
+		// 	} else {
+		// 		fmt.Println("subscribed to: ", TOPIC)
+		// 	}
+		// }()
+	}
+
+	fmt.Println("Mqtt connected")
+	opts.OnConnectionLost = func(cl mqtt.Client, err error) {
+		s.Logger.Infof("Mqtt connection lost: %v", err)
+	}
+	opts.OnReconnecting = func(mqtt.Client, *mqtt.ClientOptions) {
+		s.Logger.Info("attempting to reconnect")
+	}
+
 	s.MqttClient = mqtt.NewClient(opts)
 	if token := s.MqttClient.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
-	s.MqttSubToCommands([]string{"hibernate", "setvol", "shutdown", "sleep"})
+	// s.MqttSubToCommands([]string{"hibernate", "setvol", "shutdown", "sleep"})
 
 }
 
