@@ -591,7 +591,7 @@ func (s *HomeControlServer) InitMqtt() {
 	opts.OnConnect = func(c mqtt.Client) {
 		s.Logger.Info("mqtt connection established")
 
-		s.MqttSubToCommands([]string{"hibernate", "setvol", "shutdown", "sleep"})
+		s.MqttSubToCommands([]string{"hibernate", "setvol", "shutdown", "sleep", "alert"})
 
 		// Establish the subscription - doing this here means that it will happen every time a connection is established
 		// (useful if opts.CleanSession is TRUE or the broker does not reliably store session data)
